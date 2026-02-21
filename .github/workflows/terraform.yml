@@ -1,4 +1,4 @@
-name: Terraform Deploy to AWS
+name: Terraform Deploy - DBA Only
 
 on:
   push:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
       - name: Configure AWS Credentials
@@ -27,21 +27,26 @@ jobs:
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.6.0
 
+      # 👇 BELOW IS THE MOST IMPORTANT PART
+      # All Terraform commands run inside the DBA folder ONLY
       - name: Terraform Init
+        working-directory: ./DBA
         run: terraform init
 
       - name: Terraform Format
+        working-directory: ./DBA
         run: terraform fmt -check
 
       - name: Terraform Validate
+        working-directory: ./DBA
         run: terraform validate
 
       - name: Terraform Plan
+        working-directory: ./DBA
         run: terraform plan
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main'
+        working-directory: ./DBA
         run: terraform apply -auto-approve
