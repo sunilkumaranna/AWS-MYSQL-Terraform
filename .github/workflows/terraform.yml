@@ -1,6 +1,7 @@
 name: Terraform Deploy - DBA Only
 
 on:
+  workflow_dispatch:    # 👈 allows manual trigger from GitHub or local CLI
   push:
     branches:
       - main
@@ -28,8 +29,7 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
 
-      # 👇 BELOW IS THE MOST IMPORTANT PART
-      # All Terraform commands run inside the DBA folder ONLY
+      # 👇 Run Terraform ONLY inside DBA directory
       - name: Terraform Init
         working-directory: ./DBA
         run: terraform init
