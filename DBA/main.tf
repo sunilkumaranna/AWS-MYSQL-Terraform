@@ -30,20 +30,20 @@ resource "aws_db_subnet_group" "rds" {
 
 # ---- RDS Instance ----
 resource "aws_db_instance" "mysql" {
-  identifier              = "my-mysql-db"
-  engine                  = "mysql"
-  engine_version          = "8.0"
-  instance_class          = var.instance_class
-  allocated_storage       = var.allocated_storage
-  db_name                 = var.db_name
-  username                = var.db_username
-  password                = local.db_password
-  publicly_accessible     = true
-  skip_final_snapshot     = true
-  storage_encrypted       = true
-  multi_az                = false
-  db_subnet_group_name    = aws_db_subnet_group.rds.name
-  vpc_security_group_ids  = [
+  identifier           = "my-mysql-db"
+  engine               = "mysql"
+  engine_version       = "8.0"
+  instance_class       = var.instance_class
+  allocated_storage    = var.allocated_storage
+  db_name              = var.db_name
+  username             = var.db_username
+  password             = local.db_password
+  publicly_accessible  = true
+  skip_final_snapshot  = true
+  storage_encrypted    = true
+  multi_az             = false
+  db_subnet_group_name = aws_db_subnet_group.rds.name
+  vpc_security_group_ids = [
     data.terraform_remote_state.infra.outputs.rds_sg_id
   ]
 }
