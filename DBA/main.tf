@@ -2,6 +2,15 @@ provider "aws" {
   region = "us-east-1"
 }
 
+terraform {
+  backend "s3" {
+    bucket = "my-simple-s3-bucket-sunilanna-2610"
+    key    = "dba/terraform.tfstate"
+    region = "us-east-1"
+    encrypt = true
+  }
+}
+
 variable "db_username" { default = "admin" }
 variable "db_name" { default = "mydb2" }
 variable "allocated_storage" { default = 20 }
