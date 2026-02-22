@@ -4,9 +4,9 @@ provider "aws" {
 
 terraform {
   backend "s3" {
-    bucket = "my-simple-s3-bucket-sunilanna-2610"
-    key    = "dba/terraform.tfstate"
-    region = "us-east-1"
+    bucket  = "my-simple-s3-bucket-sunilanna-2610"
+    key     = "dba/terraform.tfstate"
+    region  = "us-east-1"
     encrypt = true
   }
 }
