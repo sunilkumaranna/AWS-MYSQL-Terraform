@@ -41,7 +41,7 @@ resource "aws_db_subnet_group" "rds" {
 resource "aws_db_instance" "mysql" {
   identifier           = "my-mysql-db"
   engine               = "mysql"
-  engine_version       = "8.0"
+  engine_version       = "5.7"
   instance_class       = var.instance_class
   allocated_storage    = var.allocated_storage
   db_name              = var.db_name
