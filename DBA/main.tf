@@ -93,23 +93,19 @@ resource "aws_db_instance" "mssql_express" {
   identifier           = "my-mssql-express-db"
   engine               = "sqlserver-ex"
   engine_version       = "15.00" # SQL Server 2019 Express
-  instance_class       = "db.t3.small" # SQL Server minimum class
+  instance_class       = "db.t3.small"
   allocated_storage    = 20
   storage_type         = "gp2"
-
   username             = "sa"
   password             = local.mssql_password
-  db_name              = "master" # SQL Server requires master database
-
+  # REMOVE db_name — SQL Server does not allow it
   publicly_accessible  = true
   skip_final_snapshot  = true
   storage_encrypted    = true
   multi_az             = false
   allow_major_version_upgrade = true
   apply_immediately    = true
-
   db_subnet_group_name = aws_db_subnet_group.rds.name
-
   vpc_security_group_ids = [
     data.terraform_remote_state.infra.outputs.rds_sg_id
   ]
