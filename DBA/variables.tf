@@ -13,3 +13,7 @@ variable "allocated_storage" {
 variable "instance_class" {
   default = "db.t3.micro"
 }
+
+variable "postgres_username" {
+  default = "pgadmin"
+}

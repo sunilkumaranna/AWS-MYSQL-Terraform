@@ -104,7 +104,7 @@ resource "aws_db_instance" "postgres" {
   allocated_storage    = var.allocated_storage
 
   db_name              = var.db_name
-  username             = var.db_username
+  username             = var.postgres_username
   password             = local.db_secrets.postgres_password
 
   publicly_accessible  = true
