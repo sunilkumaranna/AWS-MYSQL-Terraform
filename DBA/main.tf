@@ -12,26 +12,7 @@ terraform {
 }
 
 # ---------------------------
-# VARIABLES
-# ---------------------------
-variable "db_username" {
-  default = "admin"
-}
-
-variable "db_name" {
-  default = "mydb2"
-}
-
-variable "allocated_storage" {
-  default = 20
-}
-
-variable "instance_class" {
-  default = "db.t3.micro"
-}
-
-# ---------------------------
-# COMBINED SECRETS FOR MYSQL, MSSQL, POSTGRES
+# COMBINED SECRETS
 # ---------------------------
 resource "aws_secretsmanager_secret" "db_passwords" {
   name = "all-db-passwords"
@@ -60,7 +41,7 @@ resource "aws_db_subnet_group" "rds" {
 }
 
 # ---------------------------
-# MYSQL RDS INSTANCE
+# MYSQL RDS
 # ---------------------------
 resource "aws_db_instance" "mysql" {
   identifier           = "my-mysql-db"
@@ -86,15 +67,16 @@ resource "aws_db_instance" "mysql" {
 }
 
 # ---------------------------
-# SQL SERVER EXPRESS RDS INSTANCE
+# MSSQL EXPRESS RDS
 # ---------------------------
 resource "aws_db_instance" "mssql_express" {
   identifier           = "my-mssql-express-db"
   engine               = "sqlserver-ex"
-  engine_version       = "15.00" # SQL Server 2019 Express
+  engine_version       = "15.00"
   instance_class       = "db.t3.small"
   allocated_storage    = 20
   storage_type         = "gp2"
+
   username             = var.db_username
   password             = local.db_secrets.mssql_password
 
@@ -112,7 +94,7 @@ resource "aws_db_instance" "mssql_express" {
 }
 
 # ---------------------------
-# POSTGRESQL RDS INSTANCE
+# POSTGRESQL RDS
 # ---------------------------
 resource "aws_db_instance" "postgres" {
   identifier           = "my-postgres-db"
