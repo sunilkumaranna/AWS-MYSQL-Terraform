@@ -99,7 +99,7 @@ resource "aws_db_instance" "mssql_express" {
 resource "aws_db_instance" "postgres" {
   identifier           = "my-postgres-db"
   engine               = "postgres"
-  engine_version       = "15.5"
+  engine_version       = "13.15"
   instance_class       = var.instance_class
   allocated_storage    = var.allocated_storage
 
