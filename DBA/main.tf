@@ -40,6 +40,7 @@ resource "aws_db_subnet_group" "rds" {
   subnet_ids = data.terraform_remote_state.infra.outputs.public_subnet_ids
 }
 
+
 # ---------------------------
 # MYSQL RDS
 # ---------------------------
