@@ -106,7 +106,6 @@ resource "aws_db_instance" "postgres" {
   multi_az             = false
   allow_major_version_upgrade = true
   apply_immediately    = true
-
   db_subnet_group_name = aws_db_subnet_group.rds.name
   vpc_security_group_ids = [
     data.terraform_remote_state.infra.outputs.rds_sg_id
