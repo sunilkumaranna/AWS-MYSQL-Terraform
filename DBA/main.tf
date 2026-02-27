@@ -22,6 +22,7 @@ resource "aws_secretsmanager_secret" "db_passwords" {
 resource "aws_secretsmanager_secret_version" "db_passwords_version" {
   secret_id = aws_secretsmanager_secret.db_passwords.id
 
+
   secret_string = jsonencode({
     mysql_password     = "StrongPassword123!"
     mssql_password     = "StrongPassword456!"
