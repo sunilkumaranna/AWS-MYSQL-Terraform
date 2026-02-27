@@ -10,6 +10,9 @@ variable "allocated_storage" {
   default = 20
 }
 
+variable "storage_type" {
+  default = "gp2"
+}
 variable "instance_class" {
   default = "db.t3.micro"
 }
