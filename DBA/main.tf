@@ -16,6 +16,7 @@ terraform {
 # ---------------------------
 resource "aws_secretsmanager_secret" "db_passwords" {
   name = "all-db-passwords"
+  recovery_window_in_days = 0
 }
 
 resource "aws_secretsmanager_secret_version" "db_passwords_version" {
