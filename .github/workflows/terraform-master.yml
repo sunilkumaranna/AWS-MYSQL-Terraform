@@ -1,18 +1,22 @@
-name: Terraform DBA Workflow
+name: Terraform Master Workflow
 
 on:
   workflow_dispatch:
     inputs:
+      target:
+        description: 'Which resource to act on (dba or infra)'
+        required: true
+        default: 'dba'
       action:
         description: 'Choose action: apply or destroy'
         required: true
         default: 'apply'
 
 env:
-  TF_WORKING_DIR: DBA  # Must match your folder name exactly
+  AWS_REGION: ${{ secrets.AWS_REGION }}
 
 jobs:
-  terraform-dba:
+  terraform:
     runs-on: ubuntu-latest
 
     steps:
@@ -24,7 +28,7 @@ jobs:
       - name: List repo structure
         run: tree -L 2
 
-      # Step 3: Configure AWS credentials from GitHub secrets
+      # Step 3: Configure AWS credentials
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -32,18 +36,27 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Step 4: Install Terraform
+      # Step 4: Setup Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.7.0
 
-      # Step 5: Terraform Init
+      # Step 5: Set working directory dynamically
+      - name: Set Terraform working directory
+        run: |
+          if [ "${{ github.event.inputs.target }}" == "infra" ]; then
+            echo "TF_WORKING_DIR=infra" >> $GITHUB_ENV
+          else
+            echo "TF_WORKING_DIR=DBA" >> $GITHUB_ENV
+          fi
+
+      # Step 6: Terraform Init
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform init -input=false
 
-      # Step 6: Terraform Plan
+      # Step 7: Terraform Plan
       - name: Terraform Plan
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
@@ -53,7 +66,7 @@ jobs:
             terraform plan -out=tfplan
           fi
 
-      # Step 7: Terraform Apply or Destroy
+      # Step 8: Terraform Apply or Destroy
       - name: Terraform Apply or Destroy
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
