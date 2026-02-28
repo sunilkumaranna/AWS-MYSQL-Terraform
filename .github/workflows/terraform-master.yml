@@ -1,91 +1,60 @@
-name: Terraform Master Pipeline
+name: Terraform Master Workflow
 
 on:
-  workflow_dispatch:
-    inputs:
-      component:
-        description: "Select which component to manage"
-        required: true
-        type: choice
-        options:
-          - infra
-          - DBA
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+    branches:
+      - main
+      - master
 
-      action:
-        description: "Select Terraform action"
-        required: true
-        type: choice
-        options:
-          - deploy
-          - destroy
-
-permissions:
-  contents: read
-  id-token: write
+env:
+  AWS_REGION: us-east-1            # Set your AWS region
+  TF_WORKING_DIR: infra            # Path to your Terraform code
 
 jobs:
-  terraform-master:
+  terraform:
+    name: Terraform CI/CD
     runs-on: ubuntu-latest
 
     steps:
-
-      # -------------------------------
-      # Checkout repository
-      # -------------------------------
+      # 1. Checkout the repo
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      # -------------------------------
-      # Configure AWS credentials
-      # -------------------------------
+      # 2. Set up Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.7.0
+
+      # 3. Configure AWS credentials
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-region: ${{ env.AWS_REGION }}
 
-      # -------------------------------
-      # Install Terraform
-      # -------------------------------
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      # -------------------------------
-      # Terraform Init
-      # -------------------------------
+      # 4. Initialize Terraform
       - name: Terraform Init
-        working-directory: ./${{ github.event.inputs.component }}
-        run: terraform init -input=false -reconfigure
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init -input=false
 
-      # -------------------------------
-      # Terraform Validate (Deploy Only)
-      # -------------------------------
+      # 5. Validate Terraform
       - name: Terraform Validate
-        if: ${{ github.event.inputs.action == 'deploy' }}
-        working-directory: ./${{ github.event.inputs.component }}
+        working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform validate
 
-      # -------------------------------
-      # Terraform Plan (Deploy Only)
-      # -------------------------------
+      # 6. Terraform Plan
       - name: Terraform Plan
-        if: ${{ github.event.inputs.action == 'deploy' }}
-        working-directory: ./${{ github.event.inputs.component }}
-        run: terraform plan -input=false -out=tfplan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -out=tfplan -input=false
 
-      # -------------------------------
-      # Terraform Apply (Deploy Only)
-      # -------------------------------
+      # 7. Terraform Apply
       - name: Terraform Apply
-        if: ${{ github.event.inputs.action == 'deploy' }}
-        working-directory: ./${{ github.event.inputs.component }}
-        run: terraform apply -input=false -auto-approve tfplan
-
-      # -------------------------------
-      # Terraform Destroy
-      # -------------------------------
-      - name: Terraform Destroy
-        if: ${{ github.event.inputs.action == 'destroy' }}
-        working-directory: ./${{ github.event.inputs.component }}
-        run: terraform destroy -input=false -auto-approve
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply -auto-approve tfplan
