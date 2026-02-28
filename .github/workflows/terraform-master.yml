@@ -57,8 +57,8 @@ jobs:
           if [ "${{ github.event.inputs.target }}" == "infra" ]; then
             echo "TF_WORKING_DIR=infra" >> $GITHUB_ENV  # Store as environment variable for other steps
           else
-            # If user selected 'dba' (default), set TF_WORKING_DIR=dba
-            echo "TF_WORKING_DIR=dba" >> $GITHUB_ENV
+            # If user selected 'dba' (default), set TF_WORKING_DIR=DBA
+            echo "TF_WORKING_DIR=DBA" >> $GITHUB_ENV
           fi
           # $GITHUB_ENV is a special file in GitHub Actions used to pass environment variables between steps
 
