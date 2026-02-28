@@ -39,7 +39,7 @@ locals {
 # ---------------------------
 resource "aws_db_subnet_group" "rds" {
   name       = "rds-subnet-group"
-  subnet_ids = data.terraform_remote_state.infra.outputs.public_subnet_ids
+subnet_ids = data.terraform_remote_state.infra.outputs.private_subnet_ids
 }
 
 
