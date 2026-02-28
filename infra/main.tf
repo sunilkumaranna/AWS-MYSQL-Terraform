@@ -18,7 +18,7 @@ resource "aws_vpc" "main" {
   enable_dns_support   = true            # Phone can resolve website names (DNS)
   enable_dns_hostnames = true            # Phone can display domain names correctly
  tags = {
-    Name = "my-vpc"   # This is how you give your VPC a name in AWS
+    Name = "my-vpc-sunil"   # This is how you give your VPC a name in AWS
   }
 
 }
@@ -47,7 +47,12 @@ resource "aws_subnet" "public_a" {
   cidr_block              = "10.0.1.0/24"   # Space inside folder A
   availability_zone       = "us-east-1a"    # Connected to Cell Tower A
   map_public_ip_on_launch = true            # Apps automatically get internet access
+tags = {
+    Name        = "public_a_sunil"
+    Environment = "public_test"
+  }
 }
+
 
 # -----------------------------
 #  PUBLIC SUBNET B = Another App Folder WITH Internet
@@ -66,6 +71,10 @@ resource "aws_subnet" "public_b" {
   cidr_block              = "10.0.2.0/24"   # Space inside folder B
   availability_zone       = "us-east-1b"    # Connected to Cell Tower B
   map_public_ip_on_launch = true            # Apps automatically get internet access
+tags = {
+    Name        = "public_b_sunil"
+    Environment = "public_test"
+  }
 }
 
 # -----------------------------
@@ -83,6 +92,12 @@ resource "aws_subnet" "private_a" {
   cidr_block              = "10.0.3.0/24"
   availability_zone       = "us-east-1a"     # Uses Cell Tower A (still no internet)
   map_public_ip_on_launch = false            # No public IP = no internet access
+tags = {
+    Name        = "private_a_sunil"
+    Environment = "private_test"
+  }
+
+
 }
 
 # -----------------------------
