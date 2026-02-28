@@ -100,6 +100,7 @@ resource "aws_route_table" "public" {
   }
 }
 
+
 # -----------------------------
 #  PRIVATE ROUTE TABLE = NO Internet Rules
 # -----------------------------
