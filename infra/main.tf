@@ -86,6 +86,22 @@ resource "aws_subnet" "private_a" {
 }
 
 # -----------------------------
+#  PRIVATE SUBNET B (REQUIRED FOR RDS)
+# -----------------------------
+# RDS requires a minimum of TWO private subnets in TWO DIFFERENT AZs.
+resource "aws_subnet" "private_b" {
+  vpc_id                  = aws_vpc.main.id
+  cidr_block              = "10.0.4.0/24"
+  availability_zone       = "us-east-1b"
+  map_public_ip_on_launch = false
+
+  tags = {
+    Name        = "private_b_sunil"
+    Environment = "private_test"
+  }
+}
+
+# -----------------------------
 #  PUBLIC ROUTE TABLE
 # -----------------------------
 # Public route table = rules allowing PUBLIC subnets to reach the internet.
@@ -131,9 +147,15 @@ resource "aws_route_table_association" "public_b" {
   route_table_id = aws_route_table.public.id
 }
 
-# Private subnets → Private route table (NO internet)
+# Private subnet A → Private route table
 resource "aws_route_table_association" "private_a" {
   subnet_id      = aws_subnet.private_a.id
+  route_table_id = aws_route_table.private.id
+}
+
+# Private subnet B → Private route table
+resource "aws_route_table_association" "private_b" {
+  subnet_id      = aws_subnet.private_b.id
   route_table_id = aws_route_table.private.id
 }
 
@@ -142,13 +164,7 @@ resource "aws_route_table_association" "private_a" {
 # -----------------------------
 # SG = controls who can talk to your resource.
 #
-# ⚠️ Your previous SG allowed 0.0.0.0/0 on port 3306.
-#    That exposes the database to the whole world.
-#    This is extremely dangerous.
-#
-# In this safer version:
-# - Only the **public subnets** can connect to RDS.
-# - You can modify allowed ranges later if needed.
+# This improved version restricts DB access to only internal subnets.
 resource "aws_security_group" "rds" {
   name   = "rds-sg"
   vpc_id = aws_vpc.main.id

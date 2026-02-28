@@ -21,10 +21,11 @@ output "public_subnet_ids" {
   ]
 }
 
-# Private subnets → Best place for RDS and internal applications
+# Private subnets → REQUIRED for RDS subnet groups (must be 2 AZs)
 output "private_subnet_ids" {
   value = [
-    aws_subnet.private_a.id
+    aws_subnet.private_a.id,
+    aws_subnet.private_b.id
   ]
 }
 
