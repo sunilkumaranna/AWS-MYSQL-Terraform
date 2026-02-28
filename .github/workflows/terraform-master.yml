@@ -1,40 +1,32 @@
-name: Terraform Master Workflow  # This is the human-readable name of the workflow in GitHub Actions UI
+name: Terraform Master Workflow
 
-# Trigger the workflow manually from GitHub UI
 on:
   workflow_dispatch:
     inputs:
-      # Input 1: target folder to act on
       target:
-        description: 'Which resource to act on (dba or infra)'  # Explains to user what to input
-        required: true  # Must provide this input
-        default: 'dba'  # Default value if user does not select
-
-      # Input 2: Terraform action to perform
+        description: 'Which resource to act on (dba or infra)'
+        required: true
+        default: 'dba'
       action:
-        description: 'Choose action: apply or destroy'  # Explains to user what action will be performed
+        description: 'Choose action: apply or destroy'
         required: true
         default: 'apply'
 
-# Environment variables available for all steps in the workflow
 env:
-  AWS_REGION: ${{ secrets.AWS_REGION }}  # Store AWS region as environment variable, value taken from GitHub Secrets
+  AWS_REGION: ${{ secrets.AWS_REGION }}
 
-# Define jobs in the workflow
 jobs:
   terraform:
-    runs-on: ubuntu-latest  # Use latest Ubuntu GitHub runner (Linux environment)
+    runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
+
       - name: Checkout repository
-        uses: actions/checkout@v3  # Uses official GitHub Action to pull repo code to the runner
+        uses: actions/checkout@v3
 
-      # Step 2: List the repo structure for debugging
       - name: List repo structure
-        run: tree -L 2  # Shows all files/folders up to 2 levels deep
+        run: tree -L 2
 
-      # Step 3: Configure AWS credentials so Terraform can access AWS
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -42,61 +34,45 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      # Step 4: Setup Terraform CLI
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: 1.7.0  # Ensures consistent Terraform version in CI
+          terraform_version: 1.7.0
 
-      # Step 5: Dynamically set the working directory based on input
       - name: Set Terraform working directory
         run: |
-          # If the user selected 'infra', then use the infra folder
-          if [ "${{ github.event.inputs.target }}" == "infra" ]; then
+          if [ "${{ github.event.inputs.target }}" = "infra" ]; then
             echo "TF_WORKING_DIR=infra" >> $GITHUB_ENV
-
-          # Otherwise, use the DBA folder (your repo uses uppercase)
           else
             echo "TF_WORKING_DIR=DBA" >> $GITHUB_ENV
           fi
-          # $GITHUB_ENV passes env variables to future steps
 
-      # Step 6: Validate directory exists (protect against folder name mistakes)
       - name: Validate Terraform working directory exists
         run: |
           echo "Checking for directory: ${{ env.TF_WORKING_DIR }}"
           if [ ! -d "${{ env.TF_WORKING_DIR }}" ]; then
             echo "ERROR: Directory '${{ env.TF_WORKING_DIR }}' does not exist!"
-            echo "Fix: Ensure the folder exists or correct the name (Linux is case-sensitive)."
             exit 1
           fi
 
-      # Step 7: Initialize Terraform
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init -input=false  # Downloads providers, configures backend
+        run: terraform init -input=false
 
-      # Step 8: Create Terraform Plan
       - name: Terraform Plan
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-          # If the action is destroy, create a destroy plan
-          if [ "${{ github.event.inputs.action }}" == "destroy" ]; then
+          if [ "${{ github.event.inputs.action }}" = "destroy" ]; then
             terraform plan -destroy
           else
-            # Otherwise create a normal plan and save it
             terraform plan -out=tfplan
           fi
 
-      # Step 9: Apply or Destroy using Terraform
       - name: Terraform Apply or Destroy
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: |
-          # Run terraform destroy when action = destroy
-          if [ "${{ github.event.inputs.action }}" == "destroy" ]; then
+          if [ "${{ github.event.inputs.action }}" = "destroy" ]; then
             terraform destroy -auto-approve
-
-          # Otherwise apply the saved plan
           else
             terraform apply -auto-approve tfplan
           fi
