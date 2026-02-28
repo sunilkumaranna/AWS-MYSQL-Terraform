@@ -10,16 +10,18 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  TF_WORKING_DIR: dba   # only targets DBA resources
+  TF_WORKING_DIR: DBA  # Must match folder name exactly
 
 jobs:
   terraform-dba:
-    name: Terraform DBA
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: List repo structure
+        run: tree -L 2
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
