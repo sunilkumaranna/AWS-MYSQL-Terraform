@@ -1,77 +1,98 @@
-name: Terraform Master Workflow
+name: Terraform Master Workflow  # This is the human-readable name of the workflow in GitHub Actions UI
 
+# Trigger the workflow manually from GitHub UI
 on:
-  workflow_dispatch:
+  workflow_dispatch:  
     inputs:
+      # Input 1: target folder to act on
       target:
-        description: 'Which resource to act on (dba or infra)'
-        required: true
-        default: 'dba'
+        description: 'Which resource to act on (dba or infra)'  # Explains to user what to input
+        required: true  # Must provide this input
+        default: 'dba'  # Default value if user does not select
+      # Input 2: Terraform action to perform
       action:
-        description: 'Choose action: apply or destroy'
-        required: true
-        default: 'apply'
+        description: 'Choose action: apply or destroy'  # Explains to user what action will be performed
+        required: true  # Must provide this input
+        default: 'apply'  # Default action is 'apply'
 
+# Environment variables available for all steps in the workflow
 env:
-  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_REGION: ${{ secrets.AWS_REGION }}  # Store AWS region as environment variable, value taken from GitHub Secrets
 
+# Define jobs in the workflow
 jobs:
-  terraform:
-    runs-on: ubuntu-latest
+  terraform:  # Name of the job, can be anything
+    runs-on: ubuntu-latest  # Use latest Ubuntu GitHub runner (Linux environment)
 
-    steps:
-      # Step 1: Checkout repo
+    steps:  # List of sequential steps in this job
+      # Step 1: Checkout the repository
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3  # Uses official GitHub Action to pull repo code to the runner
+        # Without this, the runner would not have access to your Terraform files
 
-      # Step 2: List repo structure (debug)
+      # Step 2: List the repo structure for debugging
       - name: List repo structure
-        run: tree -L 2
+        run: tree -L 2  # Shows all files/folders up to 2 levels deep
+        # Helps verify that folders like infra/ and dba/ exist
 
-      # Step 3: Configure AWS credentials
+      # Step 3: Configure AWS credentials so Terraform can access AWS
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v2  # GitHub Action to set AWS CLI environment variables
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}  # Your AWS Access Key (secure)
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}  # Your AWS Secret Key (secure)
+          aws-region: ${{ secrets.AWS_REGION }}  # AWS region to operate in
 
-      # Step 4: Setup Terraform
+      # Step 4: Setup Terraform CLI
       - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
+        uses: hashicorp/setup-terraform@v2  # Official Terraform GitHub Action
         with:
-          terraform_version: 1.7.0
+          terraform_version: 1.7.0  # Specify the exact Terraform version to install
+          # Ensures consistent Terraform behavior across different machines
 
-      # Step 5: Set working directory dynamically
+      # Step 5: Dynamically set the working directory based on input
       - name: Set Terraform working directory
         run: |
+          # If the user selected 'infra', set TF_WORKING_DIR=infra
           if [ "${{ github.event.inputs.target }}" == "infra" ]; then
-            echo "TF_WORKING_DIR=infra" >> $GITHUB_ENV
+            echo "TF_WORKING_DIR=infra" >> $GITHUB_ENV  # Store as environment variable for other steps
           else
-            echo "TF_WORKING_DIR=DBA" >> $GITHUB_ENV
+            # If user selected 'dba' (default), set TF_WORKING_DIR=dba
+            echo "TF_WORKING_DIR=dba" >> $GITHUB_ENV
           fi
+          # $GITHUB_ENV is a special file in GitHub Actions used to pass environment variables between steps
 
-      # Step 6: Terraform Init
+      # Step 6: Initialize Terraform
       - name: Terraform Init
-        working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init -input=false
+        working-directory: ${{ env.TF_WORKING_DIR }}  # Run Terraform inside the selected folder
+        run: terraform init -input=false  # Initialize Terraform providers, backend, and modules
+        # -input=false disables interactive prompts (required for CI/CD automation)
+        # This ensures Terraform is ready to run plan or apply
 
-      # Step 7: Terraform Plan
+      # Step 7: Create Terraform Plan
       - name: Terraform Plan
-        working-directory: ${{ env.TF_WORKING_DIR }}
+        working-directory: ${{ env.TF_WORKING_DIR }}  # Same folder as init
         run: |
+          # If action is 'destroy', prepare destroy plan
           if [ "${{ github.event.inputs.action }}" == "destroy" ]; then
-            terraform plan -destroy -out=tfplan
+            terraform plan -destroy  # Show what Terraform would destroy
+            # Plan is optional for destroy, but helps review changes
           else
-            terraform plan -out=tfplan
+            # For normal apply, generate a plan and save it
+            terraform plan -out=tfplan  # Save plan to a file called tfplan
+            # Saving plan ensures the exact set of changes is applied later
+            # Prevents drift between plan and apply
           fi
 
-      # Step 8: Terraform Apply or Destroy
+      # Step 8: Apply Terraform changes or destroy resources
       - name: Terraform Apply or Destroy
-        working-directory: ${{ env.TF_WORKING_DIR }}
+        working-directory: ${{ env.TF_WORKING_DIR }}  # Run in the same working directory
         run: |
+          # If action is destroy, run Terraform destroy
           if [ "${{ github.event.inputs.action }}" == "destroy" ]; then
-            terraform destroy -auto-approve
+            terraform destroy -auto-approve  # Destroy resources without manual approval
+            # -auto-approve avoids prompt during CI/CD
           else
-            terraform apply -auto-approve tfplan
-          fi
+            # Otherwise, apply the saved plan automatically
+            terraform apply -auto-approve tfplan  # Apply previously saved tfplan
+            # Ensures exactly what was planned gets applied
