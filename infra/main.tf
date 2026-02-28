@@ -17,6 +17,10 @@ resource "aws_vpc" "main" {
   cidr_block           = "10.0.0.0/16"   # The entire memory/storage of your phone
   enable_dns_support   = true            # Phone can resolve website names (DNS)
   enable_dns_hostnames = true            # Phone can display domain names correctly
+ tags = {
+    Name = "my-vpc"   # This is how you give your VPC a name in AWS
+  }
+
 }
 
 # -----------------------------
