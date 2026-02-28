@@ -5,14 +5,15 @@ on:
     branches:
       - main
       - master
+      - infra-reset      # Special branch to trigger destroy
   pull_request:
     branches:
       - main
       - master
 
 env:
-  AWS_REGION: us-east-1            # Set your AWS region
-  TF_WORKING_DIR: infra            # Path to your Terraform code
+  AWS_REGION: us-east-1
+  TF_WORKING_DIR: infra
 
 jobs:
   terraform:
@@ -20,17 +21,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout the repo
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Set up Terraform
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.7.0
 
-      # 3. Configure AWS credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -38,23 +36,26 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # 4. Initialize Terraform
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform init -input=false
 
-      # 5. Validate Terraform
       - name: Terraform Validate
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform validate
 
-      # 6. Terraform Plan
       - name: Terraform Plan
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform plan -out=tfplan -input=false
 
-      # 7. Terraform Apply
+      # Deploy (apply) on main/master
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform apply -auto-approve tfplan
+
+      # Destroy infra on infra-reset branch
+      - name: Terraform Destroy
+        if: github.ref == 'refs/heads/infra-reset'
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform destroy -auto-approve
