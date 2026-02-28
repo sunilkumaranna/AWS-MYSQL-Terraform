@@ -30,6 +30,9 @@ resource "aws_vpc" "main" {
 # Without this, your phone cannot access the internet at all.
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
+ tags = {
+    Name = "my-vpc-sunil-gateway"   # This is how you give your VPC a name in AWS
+  }
 }
 
 # -----------------------------
@@ -96,7 +99,6 @@ tags = {
     Name        = "private_a_sunil"
     Environment = "private_test"
   }
-
 
 }
 
