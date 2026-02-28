@@ -1,0 +1,91 @@
+name: Terraform Master Pipeline
+
+on:
+  workflow_dispatch:
+    inputs:
+      component:
+        description: "Select which component to manage"
+        required: true
+        type: choice
+        options:
+          - infra
+          - DBA
+
+      action:
+        description: "Select Terraform action"
+        required: true
+        type: choice
+        options:
+          - deploy
+          - destroy
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  terraform-master:
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # -------------------------------
+      # Checkout repository
+      # -------------------------------
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # -------------------------------
+      # Configure AWS credentials
+      # -------------------------------
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      # -------------------------------
+      # Install Terraform
+      # -------------------------------
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      # -------------------------------
+      # Terraform Init
+      # -------------------------------
+      - name: Terraform Init
+        working-directory: ./${{ github.event.inputs.component }}
+        run: terraform init -input=false -reconfigure
+
+      # -------------------------------
+      # Terraform Validate (Deploy Only)
+      # -------------------------------
+      - name: Terraform Validate
+        if: ${{ github.event.inputs.action == 'deploy' }}
+        working-directory: ./${{ github.event.inputs.component }}
+        run: terraform validate
+
+      # -------------------------------
+      # Terraform Plan (Deploy Only)
+      # -------------------------------
+      - name: Terraform Plan
+        if: ${{ github.event.inputs.action == 'deploy' }}
+        working-directory: ./${{ github.event.inputs.component }}
+        run: terraform plan -input=false -out=tfplan
+
+      # -------------------------------
+      # Terraform Apply (Deploy Only)
+      # -------------------------------
+      - name: Terraform Apply
+        if: ${{ github.event.inputs.action == 'deploy' }}
+        working-directory: ./${{ github.event.inputs.component }}
+        run: terraform apply -input=false -auto-approve tfplan
+
+      # -------------------------------
+      # Terraform Destroy
+      # -------------------------------
+      - name: Terraform Destroy
+        if: ${{ github.event.inputs.action == 'destroy' }}
+        working-directory: ./${{ github.event.inputs.component }}
+        run: terraform destroy -input=false -auto-approve
