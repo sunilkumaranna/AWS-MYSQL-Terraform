@@ -1,22 +1,20 @@
 # ============================================================
-#  AWS PROVIDER
+# AWS PROVIDER
 # ============================================================
-# The AWS provider tells Terraform which AWS REGION to deploy into.
-# Choosing a region is like choosing the COUNTRY where your phone connects.
+# Terraform needs to know which AWS region to deploy resources in.
+# Like selecting the country where your cloud resources will live.
 provider "aws" {
   region = var.aws_region
 }
 
 # ============================================================
-#  VPC = Your Smartphone
+# VPC (Virtual Private Cloud) = Your Cloud "Phone"
 # ============================================================
-# A VPC is like your entire phone.
-# Everything you create (servers, subnets, databases) lives inside it.
-# /16 means you have a BIG phone with lots of storage (IP addresses).
+# /16 CIDR allows a large number of IP addresses for subnets, servers, and databases
 resource "aws_vpc" "main" {
   cidr_block           = var.vpc_cidr
-  enable_dns_support   = true          # Phone can resolve domain names (DNS)
-  enable_dns_hostnames = true          # Instances get hostnames automatically
+  enable_dns_support   = true  # DNS resolution enabled
+  enable_dns_hostnames = true  # Instances get hostnames automatically
 
   tags = {
     Name = "my-vpc-sunil"
@@ -24,10 +22,9 @@ resource "aws_vpc" "main" {
 }
 
 # ============================================================
-#  INTERNET GATEWAY = Wi-Fi / Mobile Data Switch
+# INTERNET GATEWAY = Internet Access
 # ============================================================
-# An Internet Gateway is like enabling Wi-Fi or mobile data.
-# Without this, NOTHING inside the VPC can reach the internet.
+# Allows public subnets to access the Internet
 resource "aws_internet_gateway" "igw" {
   vpc_id = aws_vpc.main.id
 
@@ -37,15 +34,14 @@ resource "aws_internet_gateway" "igw" {
 }
 
 # ============================================================
-#  PUBLIC SUBNET A
+# PUBLIC SUBNETS (High Availability)
 # ============================================================
-# Public subnet = folder on your phone that CAN use internet.
-# Apps here get a public IP automatically.
+# Public subnets automatically assign public IPs for internet access
 resource "aws_subnet" "public_a" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.public_a_cidr
-  availability_zone       = "us-east-1a"   # Cell tower A
-  map_public_ip_on_launch = true           # Auto public IP
+  availability_zone       = "us-east-1a"
+  map_public_ip_on_launch = true
 
   tags = {
     Name        = "public_a_sunil"
@@ -53,15 +49,10 @@ resource "aws_subnet" "public_a" {
   }
 }
 
-# ============================================================
-#  PUBLIC SUBNET B (High availability)
-# ============================================================
-# Exactly like Public A — but in another AZ.
-# If AZ-A goes down, apps in AZ-B still work.
 resource "aws_subnet" "public_b" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.public_b_cidr
-  availability_zone       = "us-east-1b"   # Cell tower B
+  availability_zone       = "us-east-1b"
   map_public_ip_on_launch = true
 
   tags = {
@@ -71,15 +62,15 @@ resource "aws_subnet" "public_b" {
 }
 
 # ============================================================
-#  PRIVATE SUBNET A (NO Internet)
+# PRIVATE SUBNETS (For RDS / Internal Services)
 # ============================================================
-# Private subnet = folder on your phone with strict parental controls.
-# No public IP → no internet → better security.
+# Private subnets do not assign public IPs
+# These are used for databases and sensitive services
 resource "aws_subnet" "private_a" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.private_a_cidr
   availability_zone       = "us-east-1a"
-  map_public_ip_on_launch = false          # No internet
+  map_public_ip_on_launch = false
 
   tags = {
     Name        = "private_a_sunil"
@@ -87,11 +78,6 @@ resource "aws_subnet" "private_a" {
   }
 }
 
-# ============================================================
-#  PRIVATE SUBNET B (Needed for RDS)
-# ============================================================
-# RDS requires at least **two subnets in two different AZs**
-# for Multi-AZ capability and failover safety.
 resource "aws_subnet" "private_b" {
   vpc_id                  = aws_vpc.main.id
   cidr_block              = var.private_b_cidr
@@ -105,43 +91,31 @@ resource "aws_subnet" "private_b" {
 }
 
 # ============================================================
-#  PUBLIC ROUTE TABLE
+# ROUTE TABLES
 # ============================================================
-# This is like "Internet Settings" for public subnets.
-# 0.0.0.0/0 means:
-#   "Any traffic going OUTSIDE should use the Internet Gateway (Wi-Fi/Data)"
+# Public route table routes traffic to Internet Gateway
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.main.id
 
   route {
-    cidr_block = "0.0.0.0/0"               # All outside traffic
+    cidr_block = "0.0.0.0/0"  # Route all outbound traffic
     gateway_id = aws_internet_gateway.igw.id
   }
 
-  tags = {
-    Name = "public-route-table-sunil"
-  }
+  tags = { Name = "public-route-table-sunil" }
 }
 
-# ============================================================
-#  PRIVATE ROUTE TABLE
-# ============================================================
-# No default route to the internet → total isolation.
-# Perfect for databases and internal workloads.
+# Private route table has no internet route (isolated)
 resource "aws_route_table" "private" {
   vpc_id = aws_vpc.main.id
 
-  tags = {
-    Name = "private-route-table-sunil"
-  }
+  tags = { Name = "private-route-table-sunil" }
 }
 
 # ============================================================
-#  ROUTE TABLE ASSOCIATIONS
+# ROUTE TABLE ASSOCIATIONS
 # ============================================================
-# Attach correct routing rules to each subnet.
-
-# Public → uses Public route table
+# Attach public route table to public subnets
 resource "aws_route_table_association" "public_a" {
   subnet_id      = aws_subnet.public_a.id
   route_table_id = aws_route_table.public.id
@@ -152,7 +126,7 @@ resource "aws_route_table_association" "public_b" {
   route_table_id = aws_route_table.public.id
 }
 
-# Private → uses Private route table
+# Attach private route table to private subnets
 resource "aws_route_table_association" "private_a" {
   subnet_id      = aws_subnet.private_a.id
   route_table_id = aws_route_table.private.id
@@ -164,34 +138,38 @@ resource "aws_route_table_association" "private_b" {
 }
 
 # ============================================================
-#  SECURITY GROUP FOR RDS = App Permissions
+# SECURITY GROUP FOR RDS
 # ============================================================
-# A Security Group is like app permission settings on your phone.
-# Example:
-# - Allow microphone?
-# - Allow camera?
-#
-# Here it means:
-# - Who is allowed to connect to the database?
-# - On which port?
-#
-# This SG allows MySQL traffic ONLY from inside the VPC.
+# Controls who can connect to RDS and which ports
 resource "aws_security_group" "rds" {
   name   = "rds-sg"
   vpc_id = aws_vpc.main.id
 
-  # Allow MySQL access from internal private subnets only.
+  # MySQL access from public subnets
   ingress {
-    from_port   = 3306          # MySQL
+    from_port   = 3306
     to_port     = 3306
     protocol    = "tcp"
-    cidr_blocks = [
-      var.public_a_cidr,
-      var.public_b_cidr
-    ]
+    cidr_blocks = [var.public_a_cidr, var.public_b_cidr]
   }
 
-  # Allow everything outbound
+  # MSSQL access from public subnets
+  ingress {
+    from_port   = 1433
+    to_port     = 1433
+    protocol    = "tcp"
+    cidr_blocks = [var.public_a_cidr, var.public_b_cidr]
+  }
+
+  # PostgreSQL access from public subnets
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = [var.public_a_cidr, var.public_b_cidr]
+  }
+
+  # Outbound: allow all traffic
   egress {
     from_port   = 0
     to_port     = 0
@@ -199,24 +177,16 @@ resource "aws_security_group" "rds" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = {
-    Name = "rds-sg-sunil"
-  }
+  tags = { Name = "rds-sg-sunil" }
 }
 
 # ============================================================
-#  RDS SUBNET GROUP (REQUIRED FOR RDS SETUP)
+# RDS SUBNET GROUP
 # ============================================================
-# RDS requires a "DB Subnet Group" to know which private
-# subnets it can launch inside.
-#
-# MUST include at least **two subnets in different AZs**.
+# Required for launching RDS in multiple private subnets
 resource "aws_db_subnet_group" "rds" {
-  name       = "rds-subnet-group"
-  subnet_ids = [
-    aws_subnet.private_a.id,
-    aws_subnet.private_b.id
-  ]
+  # name = "rds-subnet-group"  <-- REMOVE THIS LINE
+  subnet_ids = [aws_subnet.private_a.id, aws_subnet.private_b.id]
 
   tags = {
     Name = "rds-subnet-group-sunil"

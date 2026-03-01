@@ -1,5 +1,5 @@
 # ============================================================
-# VARIABLES FILE
+# infra VARIABLES FILE
 # ============================================================
 # Variables allow flexibility.
 # You can reuse this module for any environment just by changing values.
